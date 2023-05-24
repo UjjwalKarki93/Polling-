@@ -8,7 +8,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 
-const CONTRACT_NAME: &str = "crates.io:counter";
+const CONTRACT_NAME: &str = "polling contract";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
  
 
@@ -21,8 +21,6 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
 
 set_contract_version(_deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-
 //validating the instantiator address
     let validated_admin :Addr = _deps.api.addr_validate(&_msg.admin_address)?;
     let setup = Setup {
@@ -31,9 +29,10 @@ set_contract_version(_deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     SETUP.save(_deps.storage, &setup)?;
     Ok(Response::new().add_attribute("action", "instantiate"))
-
-    
 }
+
+
+
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
@@ -55,7 +54,6 @@ pub fn execute(
             return Err(ContractError::CustomError { val: "key already taken".to_string() });
         }
 
-        
       let poll= Poll {
         question: question.clone(),
         yes : 0,
@@ -67,15 +65,8 @@ pub fn execute(
     }
    
 
-
-
-
-
 pub fn execute_vote(deps:DepsMut, env:Env, info:MessageInfo, question:String,choice:String) -> Result<Response, ContractError> {
-    unimplemented!();
-
     //check if poll hasn't been created yet for that message(key)
-    
     if !POLL.has(deps.storage,question.clone()) {
         return Err(ContractError::CustomError { val: "Poll doesn't exist".to_string() });
     }
@@ -94,12 +85,12 @@ pub fn execute_vote(deps:DepsMut, env:Env, info:MessageInfo, question:String,cho
     }
 
 
+//save updated poll in the contract's state
+POLL.save(deps.storage,question,&poll)?;
+Ok(Response::new().add_attribute("action", "voted"))
+
     }
   
-
-
-
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
@@ -155,9 +146,6 @@ let _resp = instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
     let resp = execute(deps.as_mut(),env,info,msg).unwrap();
         assert_eq!(resp.attributes,vec![attr("action", "created_poll")]);
     }
-
-   
-        
 
 
 }
