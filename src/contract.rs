@@ -1,11 +1,11 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Addr,Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Addr,Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, to_binary};
 use cw2::set_contract_version;
 
 use crate::state::{SETUP,Setup,POLL,Poll};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, GetPollResponse};
 
 
 const CONTRACT_NAME: &str = "polling contract";
@@ -93,8 +93,21 @@ Ok(Response::new().add_attribute("action", "voted"))
   
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    unimplemented!()
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+    QueryMsg::GetPoll { question } => query_poll(deps,env,question),
+    }
+}
+
+
+
+fn query_poll(deps: Deps,env: Env,msg: String) -> StdResult<Binary> {
+
+    //may_load() to get load the pol as it returns option
+    let poll = POLL.may_load(deps.storage, msg)?;
+
+    //get poll response to binary
+    to_binary(&GetPollResponse{poll})
 }
 
 #[cfg(test)]
